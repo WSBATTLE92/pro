@@ -1,0 +1,2596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Balloon Shooter - 60 Levels Edition</title>
+    <style>
+        :root {
+            --primary: #ff4757;
+            --primary-hover: #ff6b81;
+            --secondary: #2ed573;
+            --accent: #ffa502;
+            --dark-bg: rgba(15, 15, 26, 0.95);
+            --glass: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #ffffff;
+            --text-muted: #a4b0be;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            touch-action: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0d0d1a;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+        }
+
+        /* Ambient vibrant sky background wrapper */
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 540px;
+            margin: 0 auto;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #4da4ff 0%, #8ae9ff 70%, #6cd94e 100%);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+        }
+
+        /* Rolling Green Hills Background Elements */
+        .hill-back {
+            position: absolute;
+            bottom: 0;
+            left: -10%;
+            width: 120%;
+            height: 130px;
+            background: #52c234;
+            border-radius: 50% 50% 0 0;
+            z-index: 1;
+            opacity: 0.85;
+        }
+        .hill-front {
+            position: absolute;
+            bottom: -15px;
+            left: -10%;
+            width: 130%;
+            height: 95px;
+            background: #4ac02a;
+            border-radius: 45% 45% 0 0;
+            z-index: 1;
+        }
+
+        /* Clouds Float Setup */
+        @keyframes floatCloud {
+            0% { transform: translateX(-150px); }
+            100% { transform: translateX(560px); }
+        }
+        .clouds-container {
+            position: absolute;
+            top: 50px;
+            left: 0;
+            width: 100%;
+            height: 130px;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 50px;
+            width: 90px;
+            height: 32px;
+            animation: floatCloud linear infinite;
+        }
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 50%;
+        }
+        .cloud::before {
+            width: 45px;
+            height: 45px;
+            top: -22px;
+            left: 12px;
+        }
+        .cloud::after {
+            width: 35px;
+            height: 35px;
+            top: -12px;
+            left: 45px;
+        }
+
+        /* Screen overlays style sheet */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 20px;
+            text-align: center;
+            z-index: 10;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* Cartoonish 3D Glossy Buttons & Pedestals */
+        .menu-top-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5;
+        }
+
+        .coin-badge {
+            background: linear-gradient(to bottom, #ffd32c, #ff9f43);
+            border: 2px solid #20134a;
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-weight: 800;
+            color: #20134a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+            font-size: 0.95rem;
+        }
+
+        .btn-gear {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(to bottom, #5ac8ff, #007aff);
+            border: 2.5px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
+            cursor: pointer;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }
+        .btn-gear:active {
+            transform: scale(0.9);
+        }
+
+        /* Curved Bubble Arch */
+        .menu-bubbles {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 440px;
+            margin-top: -10px;
+        }
+        .menu-bubble {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, var(--bubble-color) 65%, rgba(0,0,0,0.3) 100%);
+            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.3), 0 4px 6px rgba(0,0,0,0.15);
+        }
+
+        /* Cartoon Balloon Typography */
+        .bubble-title {
+            font-family: 'Arial Black', Impact, sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #fff;
+            -webkit-text-stroke: 2.5px #20134a;
+            text-shadow: 0 6px 0 #20134a, 0 10px 15px rgba(0, 0, 0, 0.4);
+            line-height: 1.1;
+            margin-top: 10px;
+            letter-spacing: -1px;
+        }
+        .bubble-title span {
+            color: #fffa65;
+        }
+
+        /* Menu Action Columns Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr 1fr;
+            width: 100%;
+            align-items: center;
+            justify-items: center;
+            margin: 15px 0;
+            z-index: 5;
+        }
+
+        .menu-col {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+
+        /* Menu Button design matching image */
+        .menu-btn {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            border-radius: 18px;
+            border: 2.5px solid #fff;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 4px;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.35), inset 0 2.5px 0 rgba(255,255,255,0.4), 0 8px 12px rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .menu-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.35), inset 0 1.5px 0 rgba(255,255,255,0.4);
+        }
+
+        /* Custom Menu Button Colors */
+        .purple-btn {
+            background: linear-gradient(to bottom, #d15aff, #a020f0);
+        }
+        .blue-btn {
+            background: linear-gradient(to bottom, #4facfe, #00f2fe);
+        }
+        .orange-btn {
+            background: linear-gradient(to bottom, #ff9f43, #ee5253);
+        }
+        .lightblue-btn {
+            background: linear-gradient(to bottom, #00d2d3, #0abde3);
+        }
+        .pink-btn {
+            background: linear-gradient(to bottom, #ff8da1, #ff2a68);
+        }
+        .violet-btn {
+            background: linear-gradient(to bottom, #9b5de5, #f15bb5);
+        }
+
+        .menu-btn-icon {
+            font-size: 1.8rem;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25));
+            margin-bottom: 4px;
+        }
+
+        .menu-btn-text {
+            font-family: 'Arial Black', Impact, sans-serif;
+            font-size: 0.65rem;
+            font-weight: 900;
+            color: #fff;
+            -webkit-text-stroke: 1px #20134a;
+            text-shadow: 0 1.5px 0 #20134a;
+            text-transform: uppercase;
+        }
+
+        /* Pulsing Alert Badge */
+        .btn-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ff4757;
+            color: white;
+            font-weight: 900;
+            font-size: 0.75rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 1.5px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            animation: pulseBadge 0.6s infinite alternate;
+        }
+        @keyframes pulseBadge {
+            from { transform: scale(1); }
+            to { transform: scale(1.15); }
+        }
+
+        /* Center Play Pedestal Style */
+        .menu-center {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .pedestal {
+            width: 90px;
+            height: 24px;
+            background: linear-gradient(to bottom, #bdc3c7, #7f8c8d);
+            border: 2px solid #20134a;
+            border-radius: 50%;
+            position: absolute;
+            bottom: -5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Big Green Play Button */
+        .play-circle-btn {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            border: 4px solid #ffa502;
+            background: radial-gradient(circle at 35% 35%, #9fff3b 0%, #1fab09 65%, #0c6a02 100%);
+            box-shadow: 0 6px 0 #d48000, 0 8px 15px rgba(0,0,0,0.35), inset 0 3px 0 rgba(255,255,255,0.4);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            margin-bottom: 8px;
+            transition: transform 0.1s;
+            animation: pulsePlay 1.5s infinite alternate;
+        }
+        .play-circle-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #d48000, 0 3px 5px rgba(0,0,0,0.25);
+        }
+
+        @keyframes pulsePlay {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        .play-arrow {
+            font-size: 1.9rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            margin-left: 6px;
+            line-height: 1;
+        }
+
+        .play-text {
+            font-family: 'Arial Black', Impact, sans-serif;
+            font-size: 0.95rem;
+            font-weight: 900;
+            color: #fff;
+            -webkit-text-stroke: 1.5px #20134a;
+            text-shadow: 0 2px 0 #20134a;
+        }
+
+        /* Capsule Bottom Row Buttons */
+        .menu-bottom-row {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            justify-content: center;
+            z-index: 5;
+            margin-bottom: 10px;
+        }
+
+        .menu-capsule-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 25px;
+            border: 2.5px solid #fff;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.4);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .menu-capsule-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.25);
+        }
+
+        .capsule-icon {
+            font-size: 1.1rem;
+        }
+
+        .capsule-text {
+            font-family: 'Arial Black', Impact, sans-serif;
+            font-size: 0.75rem;
+            font-weight: 900;
+            color: #fff;
+            -webkit-text-stroke: 1px #20134a;
+            text-shadow: 0 1.5px 0 #20134a;
+        }
+
+        /* Bottom Center Launcher Graphic Decor */
+        .launcher-container {
+            width: 80px;
+            height: 48px;
+            background: linear-gradient(to top, #30336b, #130cb7);
+            border-radius: 40px 40px 10px 10px;
+            border: 2.5px solid #ffa502;
+            z-index: 4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 -3px 10px rgba(0,0,0,0.25);
+            margin-bottom: -15px;
+        }
+        .launcher-orb {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #0984e3 65%, #000 100%);
+            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.5), 0 3px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Standardized Glass Screens styling (Pause / GameOver) */
+        .screen-dark {
+            background: rgba(10, 10, 20, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        h1.neon-title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ff4757, #ff7f50, #eccc68);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* High-fidelity Glassmorphic Buttons */
+        .btn {
+            background: linear-gradient(135deg, var(--primary), #ff6b81);
+            color: #fff;
+            border: none;
+            padding: 15px 32px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 16px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 260px;
+            margin: 10px 0;
+            box-shadow: 0 8px 20px rgba(255, 71, 87, 0.3);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-alt {
+            background: var(--glass);
+            border: 1.5px solid var(--glass-border);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+        .btn-green {
+            background: linear-gradient(135deg, #2ed573, #7bed9f);
+            box-shadow: 0 8px 20px rgba(46, 213, 115, 0.3);
+        }
+
+        /* Head-Up Display (HUD) */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: env(safe-area-inset-top, 16px) 20px 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #hud.visible {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        .hud-group {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .score-num {
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        .hearts {
+            display: flex;
+            gap: 4px;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .heart-icon {
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .heart-icon.lost {
+            opacity: 0.2;
+            transform: scale(0.8);
+        }
+
+        .btn-pause {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--glass-border);
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .sub-hud {
+            position: absolute;
+            top: 75px;
+            width: 100%;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .combo-box {
+            background: linear-gradient(135deg, #ffa502, #ff7f50);
+            color: #101010;
+            font-weight: 800;
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(255, 165, 2, 0.3);
+            display: none;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        .timer-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1.5px solid #2ed573;
+            color: #2ed573;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-left: auto;
+            display: none;
+        }
+
+        /* Leaderboard table style */
+        .score-table {
+            width: 100%;
+            max-width: 280px;
+            margin: 15px 0;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .score-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .score-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .score-rank {
+            font-weight: bold;
+            color: var(--accent);
+            width: 40px;
+        }
+
+        .score-value {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        /* High-fidelity Cartoon Styled Modals */
+        .cartoon-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s, visibility 0.25s;
+        }
+
+        .cartoon-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            width: 88%;
+            max-width: 400px;
+            background: linear-gradient(135deg, #fffcf0 0%, #ffeaa7 100%);
+            border: 5px solid #ff9f43;
+            border-radius: 28px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), inset 0 4px 0 rgba(255,255,255,0.6);
+            position: relative;
+            padding: 24px;
+            text-align: center;
+            color: #20134a;
+            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPop {
+            0% { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -16px;
+            right: -16px;
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(to bottom, #ff7675, #d63031);
+            border: 3px solid #fff;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-title {
+            font-family: 'Arial Black', Impact, sans-serif;
+            font-size: 1.7rem;
+            color: #ff9f43;
+            -webkit-text-stroke: 1.5px #20134a;
+            text-shadow: 0 2px 0 #20134a;
+            margin-bottom: 15px;
+        }
+
+        /* Shop Item Grid */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .shop-item {
+            background: white;
+            border: 3px solid #ffbc47;
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+        .shop-preview {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            margin: 8px 0;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+        .shop-name {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #20134a;
+        }
+        .shop-btn {
+            background: linear-gradient(to bottom, #2ed573, #26af56);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 6px;
+            width: 100%;
+        }
+        .shop-btn.owned {
+            background: #a4b0be !important;
+        }
+        .shop-btn.active-skin {
+            background: linear-gradient(to bottom, #ff9f43, #ee5253) !important;
+        }
+
+        /* Missions list */
+        .mission-item {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+        }
+        .mission-details {
+            display: flex;
+            flex-direction: column;
+        }
+        .mission-desc {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #20134a;
+        }
+        .mission-progress {
+            font-size: 0.75rem;
+            color: #666;
+        }
+        .mission-claim-btn {
+            background: linear-gradient(to bottom, #ff9f43, #ee5253);
+            border: none;
+            color: white;
+            font-weight: bold;
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .mission-claim-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        /* Compact 60 Levels Map Grid style */
+        .levels-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 8px;
+            border: 2px solid #ffbc47;
+            border-radius: 14px;
+            background: white;
+        }
+        .level-btn {
+            background: linear-gradient(to bottom, #ffea8a, #ffb03a);
+            border: 2px solid #20134a;
+            border-radius: 12px;
+            padding: 10px 4px;
+            cursor: pointer;
+            font-weight: 900;
+            font-size: 0.85rem;
+            color: #20134a;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }
+        .level-btn.active-lvl {
+            background: linear-gradient(to bottom, #2ed573, #1fab09) !important;
+            color: white;
+        }
+        .level-btn.locked-lvl {
+            background: #f1f2f6 !important;
+            border-color: #bdc3c7 !important;
+            box-shadow: none !important;
+        }
+
+        /* Sound Settings */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 12px 18px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .setting-toggle {
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 6px 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .setting-toggle.on {
+            background: #2ed573;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <!-- Canvas Background Decorations -->
+        <div class="clouds-container">
+            <div class="cloud" style="top: 10px; animation-duration: 25s; opacity: 0.8; transform: scale(0.8);"></div>
+            <div class="cloud" style="top: 50px; animation-duration: 15s; opacity: 0.9; transform: scale(1.2);"></div>
+            <div class="cloud" style="top: 80px; animation-duration: 35s; opacity: 0.6; transform: scale(0.6);"></div>
+        </div>
+        <div class="hill-back"></div>
+        <div class="hill-front"></div>
+
+        <!-- HUD Overlay -->
+        <div id="hud">
+            <div class="hud-group">
+                <span>SCORE:</span>
+                <span id="score-val" class="score-num">0</span>
+            </div>
+            <div id="lives-container" class="hud-group">
+                <div class="hearts">
+                    <span class="heart-icon">♥</span>
+                    <span class="heart-icon">♥</span>
+                    <span class="heart-icon">♥</span>
+                </div>
+            </div>
+            <button id="pause-btn" class="btn-pause">||</button>
+        </div>
+
+        <div class="sub-hud">
+            <!-- Dynamic Level Progress Bar inside sub-hud -->
+            <div id="level-hud-box" class="timer-box" style="margin-left: 0; margin-right: auto; display: none;">Lvl <span id="hud-lvl-val">1</span>: <span id="hud-progress-val">0/20</span></div>
+            <div id="combo-ui" class="combo-box">Combo x2</div>
+            <div id="timer-ui" class="timer-box">TIME: <span id="time-val">60</span>s</div>
+        </div>
+
+        <!-- Canvas -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Dynamic High-Fidelity Start Screen -->
+        <div id="screen-start" class="screen">
+            <!-- Top Bar -->
+            <div class="menu-top-bar">
+                <div class="coin-badge">
+                    <span class="coin-icon">🪙</span>
+                    <span id="menu-coins">200</span>
+                </div>
+                <button id="btn-settings-gear" class="btn-gear">⚙️</button>
+            </div>
+
+            <!-- Curved Bubble Row -->
+            <div class="menu-bubbles">
+                <div class="menu-bubble" style="--bubble-color: #ff4757;"></div>
+                <div class="menu-bubble" style="--bubble-color: #2ed573;"></div>
+                <div class="menu-bubble" style="--bubble-color: #1e90ff;"></div>
+                <div class="menu-bubble" style="--bubble-color: #ffa502;"></div>
+                <div class="menu-bubble" style="--bubble-color: #9b59b6;"></div>
+                <div class="menu-bubble" style="--bubble-color: #00d2d3;"></div>
+            </div>
+
+            <!-- Game Title -->
+            <div class="menu-title-container">
+                <h1 class="bubble-title">BALLOON<br><span>POPPER</span></h1>
+            </div>
+
+            <!-- Dynamic Columns Grid -->
+            <div class="menu-grid">
+                <!-- Left Column -->
+                <div class="menu-col">
+                    <button class="menu-btn purple-btn" id="btn-daily">
+                        <span class="btn-badge">!</span>
+                        <span class="menu-btn-icon">⭐</span>
+                        <span class="menu-btn-text">DAILY</span>
+                    </button>
+                    <button class="menu-btn blue-btn" id="btn-highscores">
+                        <span class="menu-btn-icon">🏆</span>
+                        <span class="menu-btn-text">SCORES</span>
+                    </button>
+                </div>
+
+                <!-- Central Platform with Play Button -->
+                <div class="menu-center">
+                    <div class="pedestal"></div>
+                    <button class="play-circle-btn" id="btn-play">
+                        <span class="play-arrow">▶</span>
+                        <span class="play-text">PLAY</span>
+                    </button>
+                </div>
+
+                <!-- Right Column -->
+                <div class="menu-col">
+                    <button class="menu-btn orange-btn" id="btn-shop">
+                        <span class="menu-btn-icon">🏪</span>
+                        <span class="menu-btn-text">SHOP</span>
+                    </button>
+                    <button class="menu-btn lightblue-btn" id="btn-missions">
+                        <span class="btn-badge">!</span>
+                        <span class="menu-btn-icon">🎯</span>
+                        <span class="menu-btn-text">MISSION</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Capsule Row -->
+            <div class="menu-bottom-row">
+                <button class="menu-capsule-btn pink-btn" id="btn-levels">
+                    <span class="capsule-icon">🔴</span>
+                    <span class="capsule-text">LEVELS</span>
+                </button>
+                <button class="menu-capsule-btn violet-btn" id="btn-moregames">
+                    <span class="capsule-icon">❤️</span>
+                    <span class="capsule-text">MORE GAMES</span>
+                </button>
+            </div>
+
+            <!-- Decorative Base Cannon Launcher -->
+            <div class="launcher-container">
+                <div class="launcher-orb"></div>
+            </div>
+        </div>
+
+        <!-- Mode Selection Screen -->
+        <div id="screen-modes" class="screen screen-dark hidden">
+            <h1 class="neon-title" style="margin-top: 60px;">Select Mode</h1>
+            <p class="subtitle">Choose your preferred style of gameplay.</p>
+            <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                <button class="btn btn-green" id="btn-mode-classic">Classic Mode</button>
+                <button class="btn" id="btn-mode-time">Time Attack</button>
+            </div>
+            <button class="btn btn-alt" id="btn-mode-back" style="margin-bottom: 60px;">Back</button>
+        </div>
+
+        <!-- Pause Screen -->
+        <div id="screen-pause" class="screen screen-dark hidden">
+            <h1 class="neon-title" style="margin-top: 60px;">Game Paused</h1>
+            <p class="subtitle">Take a moment, then resume the pop action.</p>
+            <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                <button class="btn" id="btn-resume">Resume</button>
+                <button class="btn btn-alt" id="btn-quit">Main Menu</button>
+            </div>
+            <div style="height:40px;"></div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="screen-gameover" class="screen screen-dark hidden">
+            <h1 id="gameover-title" class="neon-title" style="margin-top: 50px;">Game Over</h1>
+            <p class="subtitle" id="gameover-msg">Outstanding attempt! Your final score is locked in.</p>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 25px;">
+                Score: <span id="final-score">0</span>
+            </div>
+            <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                <button class="btn btn-green" id="btn-retry">Play Again</button>
+                <button class="btn btn-alt" id="btn-go-home">Main Menu</button>
+            </div>
+            <div style="height:40px;"></div>
+        </div>
+
+        <!-- High Scores Screen -->
+        <div id="screen-scores" class="screen screen-dark hidden">
+            <h1 class="neon-title" style="margin-top: 40px;">High Scores</h1>
+            <p class="subtitle" style="margin-bottom: 10px;">The best scores recorded locally.</p>
+            
+            <div style="width: 100%; display: flex; flex-direction: column; align-items: center; overflow-y:auto; max-height:60%;">
+                <h3 style="color: var(--accent); font-size: 1rem; margin-top: 10px;">Classic Mode</h3>
+                <table class="score-table">
+                    <tbody id="scores-classic-body"></tbody>
+                </table>
+
+                <h3 style="color: #2ed573; font-size: 1rem; margin-top: 10px;">Time Attack</h3>
+                <table class="score-table">
+                    <tbody id="scores-time-body"></tbody>
+                </table>
+            </div>
+
+            <button class="btn btn-alt" id="btn-scores-back" style="margin-bottom: 40px;">Back</button>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="modal-settings" class="cartoon-modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="ui.closeModal('modal-settings')">×</button>
+                <h2 class="modal-title">Settings</h2>
+                <div class="setting-row">
+                    <span>Sound Effects</span>
+                    <button id="toggle-sfx" class="setting-toggle on" onclick="audio.toggleSFX()">ON</button>
+                </div>
+                <div class="setting-row">
+                    <span>Music Synth</span>
+                    <button id="toggle-music" class="setting-toggle" onclick="audio.toggleMusic()">OFF</button>
+                </div>
+                <button class="btn btn-alt" onclick="game.resetAllProgress()" style="margin-top: 15px; max-width: 100%;">Reset All Progress</button>
+            </div>
+        </div>
+
+        <!-- Daily Reward Modal -->
+        <div id="modal-daily" class="cartoon-modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="ui.closeModal('modal-daily')">×</button>
+                <h2 class="modal-title">Daily Gift</h2>
+                <div style="font-size: 5rem; margin: 15px 0;">🎁</div>
+                <p style="margin-bottom: 15px; font-weight: bold; font-size: 1rem;">Unlock your lucky surprise chest!</p>
+                <button class="btn btn-green" id="btn-claim-daily" onclick="game.claimDailyGift()" style="max-width:100%;">Claim Coins</button>
+            </div>
+        </div>
+
+        <!-- Shop Modal -->
+        <div id="modal-shop" class="cartoon-modal">
+            <div class="modal-content" style="max-width: 440px;">
+                <button class="modal-close" onclick="ui.closeModal('modal-shop')">×</button>
+                <h2 class="modal-title">Balloon Shop</h2>
+                <p style="font-weight: bold; margin-bottom: 8px;">Equip skins to customize the pop balloons!</p>
+                <div class="shop-grid" id="shop-grid-container">
+                    <!-- Loaded dynamically via js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Missions Modal -->
+        <div id="modal-missions" class="cartoon-modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="ui.closeModal('modal-missions')">×</button>
+                <h2 class="modal-title">Missions</h2>
+                <div id="missions-list-container">
+                    <!-- Loaded dynamically via js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Levels Modal (Dynamic 60 Level Selector map) -->
+        <div id="modal-levels" class="cartoon-modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="ui.closeModal('modal-levels')">×</button>
+                <h2 class="modal-title">60 Levels Map</h2>
+                <p style="font-weight: bold; font-size:0.8rem; margin-bottom:5px;">Levels progressively increase in speed, sways and bombs!</p>
+                <div class="levels-grid" id="levels-grid-container">
+                    <!-- Loaded dynamically with 60 levels via js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- More Games Modal -->
+        <div id="modal-moregames" class="cartoon-modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="ui.closeModal('modal-moregames')">×</button>
+                <h2 class="modal-title">More Games</h2>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="background:white; border:2px solid #ddd; border-radius:12px; padding:10px; display:flex; align-items:center; gap:12px;">
+                        <span style="font-size:2.5rem;">🧩</span>
+                        <div style="text-align:left;">
+                            <strong style="font-size:0.9rem;">Block Puzzle Pro</strong>
+                            <div style="font-size:0.75rem; color:#666;">Ultimate cartoon matching.</div>
+                        </div>
+                    </div>
+                    <div style="background:white; border:2px solid #ddd; border-radius:12px; padding:10px; display:flex; align-items:center; gap:12px;">
+                        <span style="font-size:2.5rem;">👑</span>
+                        <div style="text-align:left;">
+                            <strong style="font-size:0.9rem;">Pop Jewels Deluxe</strong>
+                            <div style="font-size:0.75rem; color:#666;">Match 3 cartoon classic game.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Synthesized Sound Controller (Web Audio API) ---
+        class GameAudio {
+            constructor() {
+                this.audioCtx = null;
+                this.soundEnabled = localStorage.getItem('sound_enabled') !== 'false';
+                this.musicEnabled = localStorage.getItem('music_enabled') === 'true';
+                this.musicInterval = null;
+                this.musicPlaying = false;
+            }
+
+            init() {
+                if (this.audioCtx) return;
+                try {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    this.audioCtx = new AudioContextClass();
+                } catch (e) {
+                    // Audio context not supported
+                }
+            }
+
+            resume() {
+                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+            }
+
+            toggleSFX() {
+                this.soundEnabled = !this.soundEnabled;
+                localStorage.setItem('sound_enabled', this.soundEnabled);
+                const btn = document.getElementById('toggle-sfx');
+                btn.textContent = this.soundEnabled ? 'ON' : 'OFF';
+                btn.className = 'setting-toggle' + (this.soundEnabled ? ' on' : '');
+                this.playPop();
+            }
+
+            toggleMusic() {
+                this.musicEnabled = !this.musicEnabled;
+                localStorage.setItem('music_enabled', this.musicEnabled);
+                const btn = document.getElementById('toggle-music');
+                btn.textContent = this.musicEnabled ? 'ON' : 'OFF';
+                btn.className = 'setting-toggle' + (this.musicEnabled ? ' on' : '');
+
+                if (this.musicEnabled) {
+                    this.startMusic();
+                } else {
+                    this.stopMusic();
+                }
+            }
+
+            startMusic() {
+                this.init();
+                this.resume();
+                if (!this.audioCtx || this.musicPlaying || !this.musicEnabled) return;
+                this.musicPlaying = true;
+                
+                const tempo = 135;
+                const noteLength = 60 / tempo / 2;
+                const melody = [261.63, 329.63, 392.00, 329.63, 293.66, 349.23, 440.00, 349.23, 329.63, 392.00, 523.25, 392.00, 349.23, 440.00, 587.33, 440.00];
+                let step = 0;
+
+                this.musicInterval = setInterval(() => {
+                    if (!this.musicEnabled) {
+                        this.stopMusic();
+                        return;
+                    }
+                    const now = this.audioCtx.currentTime;
+                    const osc = this.audioCtx.createOscillator();
+                    const gain = this.audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.audioCtx.destination);
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(melody[step % melody.length], now);
+                    
+                    gain.gain.setValueAtTime(0.03, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + noteLength - 0.02);
+                    
+                    osc.start(now);
+                    osc.stop(now + noteLength - 0.01);
+                    step++;
+                }, noteLength * 1000);
+            }
+
+            stopMusic() {
+                this.musicPlaying = false;
+                if (this.musicInterval) {
+                    clearInterval(this.musicInterval);
+                }
+            }
+
+            playPop() {
+                if (!this.soundEnabled) return;
+                this.init();
+                this.resume();
+                if (!this.audioCtx) return;
+
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+
+                const now = this.audioCtx.currentTime;
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.exponentialRampToValueAtTime(1100, now + 0.08);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.08);
+
+                osc.start(now);
+                osc.stop(now + 0.08);
+            }
+
+            playGoldPop() {
+                if (!this.soundEnabled) return;
+                this.init();
+                this.resume();
+                if (!this.audioCtx) return;
+
+                const now = this.audioCtx.currentTime;
+                [750, 1150].forEach((freq, idx) => {
+                    const osc = this.audioCtx.createOscillator();
+                    const gain = this.audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.audioCtx.destination);
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.04);
+                    gain.gain.linearRampToValueAtTime(0.001, now + idx * 0.04 + 0.12);
+
+                    osc.start(now + idx * 0.04);
+                    osc.stop(now + idx * 0.04 + 0.12);
+                });
+            }
+
+            playExplosion() {
+                if (!this.soundEnabled) return;
+                this.init();
+                this.resume();
+                if (!this.audioCtx) return;
+
+                const now = this.audioCtx.currentTime;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.linearRampToValueAtTime(20, now + 0.35);
+
+                gain.gain.setValueAtTime(0.45, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
+
+                osc.start(now);
+                osc.stop(now + 0.38);
+            }
+
+            playLevelUp() {
+                if (!this.soundEnabled) return;
+                this.init();
+                this.resume();
+                if (!this.audioCtx) return;
+
+                const now = this.audioCtx.currentTime;
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                notes.forEach((freq, i) => {
+                    const osc = this.audioCtx.createOscillator();
+                    const gain = this.audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.audioCtx.destination);
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                    gain.gain.setValueAtTime(0.12, now + i * 0.08);
+                    gain.gain.linearRampToValueAtTime(0.001, now + i * 0.08 + 0.18);
+
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.18);
+                });
+            }
+
+            playShoot() {
+                if (!this.soundEnabled) return;
+                this.init();
+                this.resume();
+                if (!this.audioCtx) return;
+
+                const now = this.audioCtx.currentTime;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(450, now);
+                osc.frequency.exponentialRampToValueAtTime(180, now + 0.1);
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+
+                osc.start(now);
+                osc.stop(now + 0.1);
+            }
+        }
+
+        const audio = new GameAudio();
+
+        // --- Arrow (Projectile) Class ---
+        class Arrow {
+            constructor(startX, startY, targetX, targetY) {
+                this.x = startX;
+                this.y = startY;
+                this.speed = 18; // Speed of the arrow projectile
+                
+                const dx = targetX - startX;
+                const dy = targetY - startY;
+                this.angle = Math.atan2(dy, dx);
+                
+                this.vx = Math.cos(this.angle) * this.speed;
+                this.vy = Math.sin(this.angle) * this.speed;
+                this.radius = 6; // Hit detection radius
+                this.active = true;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                // Draw sleek golden needle / arrow
+                ctx.beginPath();
+                ctx.moveTo(-15, 0);
+                ctx.lineTo(15, 0);
+                ctx.strokeStyle = '#ffa502';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Arrow Point
+                ctx.beginPath();
+                ctx.moveTo(15, 0);
+                ctx.lineTo(5, -6);
+                ctx.lineTo(5, 6);
+                ctx.closePath();
+                ctx.fillStyle = '#ff4757';
+                ctx.fill();
+
+                // Arrow Tail Fletching
+                ctx.beginPath();
+                ctx.moveTo(-15, 0);
+                ctx.lineTo(-20, -5);
+                ctx.lineTo(-17, 0);
+                ctx.lineTo(-20, 5);
+                ctx.closePath();
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            isOutOfBounds(w, h) {
+                return (this.x < -20 || this.x > w + 20 || this.y < -20 || this.y > h + 20);
+            }
+        }
+
+        // --- Core Physics & Rendering Classes ---
+        class Balloon {
+            constructor(w, h, mult) {
+                this.radius = Math.max(18, Math.min(w * 0.075, 28));
+                this.x = Math.random() * (w - this.radius * 2) + this.radius;
+                this.y = h + this.radius * 2;
+                
+                // Fetch currentLevel to scale details
+                const level = window.gameInstance ? window.gameInstance.currentLevel : 1;
+                const isLevelMode = window.gameInstance && window.gameInstance.gameMode === 'level';
+
+                this.speed = (1.5 + Math.random() * 1.8) * mult;
+                this.angle = Math.random() * Math.PI;
+                this.angleSpeed = 0.01 + Math.random() * 0.02;
+                this.swayAmount = 8 + Math.random() * 10;
+                
+                // Formulate progressive probabilities based on active level
+                let bombChance = 0.12;
+                let goldenChance = 0.10;
+
+                if (isLevelMode) {
+                    bombChance = Math.min(0.40, 0.10 + level * 0.005);
+                    goldenChance = Math.max(0.04, 0.14 - level * 0.0015);
+                }
+
+                const r = Math.random();
+                if (r < bombChance) {
+                    this.type = 'bomb';
+                    this.color = '#1e272e';
+                    // High-tier Evil Bombs move 25% faster!
+                    this.speed *= 1.25; 
+                } else if (r < bombChance + goldenChance) {
+                    this.type = 'golden';
+                    this.color = '#ffa502';
+                } else {
+                    this.type = 'normal';
+                    const colors = ['#ff4757', '#2ed573', '#1e90ff', '#ffa502', '#9b59b6', '#00d2d3'];
+                    this.color = colors[Math.floor(Math.random() * colors.length)];
+                }
+            }
+
+            update() {
+                this.y -= this.speed;
+                this.angle += this.angleSpeed;
+                
+                // Sway gets wider at higher levels, making aiming with launcher trickier
+                const level = window.gameInstance ? window.gameInstance.currentLevel : 1;
+                const swayMultiplier = 1.0 + (level * 0.015);
+                this.currentX = this.x + Math.sin(this.angle) * (this.swayAmount * swayMultiplier);
+            }
+
+            draw(ctx) {
+                const cx = this.currentX || this.x;
+                const cy = this.y;
+                const r = this.radius;
+
+                ctx.save();
+                
+                if (this.type === 'bomb') {
+                    // Spiky Bomb Design
+                    ctx.beginPath();
+                    for (let i = 0; i < 16; i++) {
+                        const theta = (i * Math.PI * 2) / 16;
+                        const dist = i % 2 === 0 ? r * 1.15 : r * 0.8;
+                        ctx.lineTo(cx + Math.cos(theta) * dist, cy + Math.sin(theta) * dist);
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = '#1e272e';
+                    ctx.fill();
+
+                    // Hazard lines inside
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r * 0.4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff4757';
+                    ctx.fill();
+
+                    // Fuse
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy - r * 0.8);
+                    ctx.quadraticCurveTo(cx + 10, cy - r * 1.3, cx + 5, cy - r * 1.6);
+                    ctx.strokeStyle = '#ffa502';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+
+                    // Fuse Spark
+                    ctx.beginPath();
+                    ctx.arc(cx + 5, cy - r * 1.6, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = '#ffa502';
+                    ctx.shadowBlur = 8;
+                    ctx.fill();
+                } else {
+                    // Balloon Skin Render System
+                    const activeSkin = window.gameInstance ? window.gameInstance.activeSkin : 'classic';
+
+                    if (this.type === 'normal' && activeSkin === 'neon') {
+                        // Neon Skin Render
+                        ctx.shadowColor = '#39ff14';
+                        ctx.shadowBlur = 12;
+                        const gradient = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, r*0.1, cx, cy, r);
+                        gradient.addColorStop(0, '#fff');
+                        gradient.addColorStop(0.3, '#39ff14');
+                        gradient.addColorStop(1, '#05c46b');
+                        ctx.beginPath();
+                        ctx.ellipse(cx, cy, r, r * 1.25, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = gradient;
+                        ctx.fill();
+                    } else if (this.type === 'normal' && activeSkin === 'gold') {
+                        // Gold Skin Render
+                        ctx.shadowColor = '#ffd32c';
+                        ctx.shadowBlur = 14;
+                        const gradient = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, r*0.1, cx, cy, r);
+                        gradient.addColorStop(0, '#fff');
+                        gradient.addColorStop(0.4, '#ffd200');
+                        gradient.addColorStop(1, '#ff9f43');
+                        ctx.beginPath();
+                        ctx.ellipse(cx, cy, r, r * 1.25, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = gradient;
+                        ctx.fill();
+                    } else if (this.type === 'normal' && activeSkin === 'star') {
+                        // Star Skin Design
+                        ctx.shadowColor = '#f15bb5';
+                        ctx.shadowBlur = 10;
+                        if (window.gameInstance) {
+                            window.gameInstance.drawStar(ctx, cx, cy, 5, r * 1.2, r * 0.6, '#f15bb5');
+                        }
+                    } else {
+                        // Smooth Default Balloon Design
+                        const gradient = ctx.createRadialGradient(
+                            cx - r * 0.35, cy - r * 0.35, r * 0.05,
+                            cx, cy, r
+                        );
+                        
+                        if (this.type === 'golden') {
+                            gradient.addColorStop(0, '#fff');
+                            gradient.addColorStop(0.2, '#ffd700');
+                            gradient.addColorStop(1, '#ff8c00');
+                        } else {
+                            gradient.addColorStop(0, '#ffffff');
+                            gradient.addColorStop(0.25, this.color);
+                            gradient.addColorStop(1, this.color);
+                        }
+
+                        ctx.beginPath();
+                        ctx.ellipse(cx, cy, r, r * 1.25, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = gradient;
+                        
+                        if (this.type === 'golden') {
+                            ctx.shadowColor = '#ffa502';
+                            ctx.shadowBlur = 15;
+                        }
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+
+                    // Triangular knot at bottom
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy + r * 1.2);
+                    ctx.lineTo(cx - 5, cy + r * 1.35);
+                    ctx.lineTo(cx + 5, cy + r * 1.35);
+                    ctx.closePath();
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+
+                    // String
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy + r * 1.3);
+                    ctx.quadraticCurveTo(cx - 5, cy + r * 1.8, cx + 2, cy + r * 2.3);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            isHit(px, py) {
+                const cx = this.currentX || this.x;
+                const dist = Math.hypot(px - cx, py - this.y);
+                return dist < this.radius * 1.25;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 2.5 + Math.random() * 4.5;
+                this.vx = Math.cos(angle) * velocity;
+                this.vy = Math.sin(angle) * velocity;
+                this.radius = 1.8 + Math.random() * 3.5;
+                this.alpha = 1.0;
+                this.gravity = 0.08;
+                this.decay = 0.015 + Math.random() * 0.02;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.alpha -= this.decay;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class ScorePopup {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.vy = -1.2;
+                this.alpha = 1.0;
+            }
+
+            update() {
+                this.y += this.vy;
+                this.alpha -= 0.02;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = this.color;
+                ctx.font = 'bold 1.15rem system-ui, -apple-system';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        // --- Game Manager ---
+        class GameManager {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.gameState = 'start';
+                this.gameMode = 'classic';
+                
+                this.score = 0;
+                this.combo = 0;
+                this.maxCombo = 0;
+                this.lives = 3;
+                this.timeRemaining = 60;
+                
+                this.speedMultiplier = 1.0;
+                this.spawnRate = 1200;
+                this.lastSpawnTime = 0;
+                this.lastSecondTime = 0;
+                this.lastDifficultyIncrease = 0;
+                this.shakeAmount = 0;
+                
+                this.balloons = [];
+                this.particles = [];
+                this.popups = [];
+                this.arrows = []; // Projectile Array
+
+                // Track aiming pos
+                this.pointerX = 0;
+                this.pointerY = 0;
+
+                // Sound Setting Setup
+                this.initSettingsToggles();
+                
+                // Rich Features Economy / Unlock Database
+                this.coins = parseInt(localStorage.getItem('balloon_coins') || '200');
+                this.activeSkin = localStorage.getItem('active_balloon_skin') || 'classic';
+                this.unlockedSkins = JSON.parse(localStorage.getItem('unlocked_skins') || '["classic"]');
+                this.selectedLevel = parseInt(localStorage.getItem('selected_level') || '1');
+                this.highestUnlockedLevel = parseInt(localStorage.getItem('highest_unlocked_level') || '1');
+                this.currentLevel = 1;
+                this.levelPops = 0;
+                this.levelTargetPops = 20;
+                
+                this.missionProgress = JSON.parse(localStorage.getItem('mission_progress') || '{"pops":0, "goldPops":0, "highScoreClassic":0}');
+                this.claimedMissions = JSON.parse(localStorage.getItem('claimed_missions') || '[]');
+
+                this.highScores = {
+                    classic: [1500, 1000, 500],
+                    time: [1200, 800, 400]
+                };
+
+                this.initListeners();
+                this.loadScores();
+                this.resizeCanvas();
+                this.updateMenuCoinBadge();
+                window.addEventListener('resize', () => this.resizeCanvas());
+                window.gameInstance = this;
+            }
+
+            initSettingsToggles() {
+                const sfxBtn = document.getElementById('toggle-sfx');
+                const musicBtn = document.getElementById('toggle-music');
+                sfxBtn.textContent = audio.soundEnabled ? 'ON' : 'OFF';
+                sfxBtn.className = 'setting-toggle' + (audio.soundEnabled ? ' on' : '');
+                musicBtn.textContent = audio.musicEnabled ? 'ON' : 'OFF';
+                musicBtn.className = 'setting-toggle' + (audio.musicEnabled ? ' on' : '');
+            }
+
+            loadScores() {
+                try {
+                    const data = localStorage.getItem('balloon_shooter_scores');
+                    if (data) {
+                        this.highScores = JSON.parse(data);
+                    }
+                } catch(e) {}
+            }
+
+            saveScores() {
+                try {
+                    localStorage.setItem('balloon_shooter_scores', JSON.stringify(this.highScores));
+                } catch(e) {}
+            }
+
+            updateHighScores(mode, finalScore) {
+                if (!this.highScores[mode]) this.highScores[mode] = [];
+                this.highScores[mode].push(finalScore);
+                this.highScores[mode].sort((a, b) => b - a);
+                this.highScores[mode] = this.highScores[mode].slice(0, 5);
+                this.saveScores();
+
+                // Track Classic Mode Highscore Mission Progress
+                if (mode === 'classic' && finalScore > this.missionProgress.highScoreClassic) {
+                    this.missionProgress.highScoreClassic = finalScore;
+                    localStorage.setItem('mission_progress', JSON.stringify(this.missionProgress));
+                }
+            }
+
+            resizeCanvas() {
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width;
+                this.canvas.height = rect.height;
+            }
+
+            initListeners() {
+                // Main Menu Interaction Connections
+                document.getElementById('btn-play').addEventListener('click', () => {
+                    this.showScreen('screen-modes');
+                    audio.playPop();
+                });
+                document.getElementById('btn-highscores').addEventListener('click', () => {
+                    this.renderScoreboard();
+                    this.showScreen('screen-scores');
+                    audio.playPop();
+                });
+                document.getElementById('btn-scores-back').addEventListener('click', () => {
+                    this.showScreen('screen-start');
+                    audio.playPop();
+                });
+                document.getElementById('btn-mode-back').addEventListener('click', () => {
+                    this.showScreen('screen-start');
+                    audio.playPop();
+                });
+
+                document.getElementById('btn-mode-classic').addEventListener('click', () => this.startGame('classic'));
+                document.getElementById('btn-mode-time').addEventListener('click', () => this.startGame('time'));
+
+                document.getElementById('pause-btn').addEventListener('click', () => this.pauseGame());
+                document.getElementById('btn-resume').addEventListener('click', () => this.resumeGame());
+                document.getElementById('btn-quit').addEventListener('click', () => this.quitToMenu());
+
+                // Universal Retry Triggering Button
+                document.getElementById('btn-retry').addEventListener('click', () => {
+                    if (this.gameState === 'level_clear') {
+                        const nextLvl = this.currentLevel + 1;
+                        if (nextLvl <= 60) {
+                            this.startGame('level', nextLvl);
+                        } else {
+                            this.quitToMenu();
+                        }
+                    } else {
+                        this.startGame(this.gameMode, this.currentLevel);
+                    }
+                });
+
+                document.getElementById('btn-go-home').addEventListener('click', () => this.quitToMenu());
+
+                // Gear Settings button
+                document.getElementById('btn-settings-gear').addEventListener('click', () => {
+                    ui.openModal('modal-settings');
+                    audio.playPop();
+                });
+
+                // Extra Rich Modals button mapping
+                document.getElementById('btn-daily').addEventListener('click', () => {
+                    ui.openModal('modal-daily');
+                    audio.playPop();
+                    this.renderDailyButtonState();
+                });
+                document.getElementById('btn-shop').addEventListener('click', () => {
+                    ui.openModal('modal-shop');
+                    audio.playPop();
+                    this.renderShop();
+                });
+                document.getElementById('btn-missions').addEventListener('click', () => {
+                    ui.openModal('modal-missions');
+                    audio.playPop();
+                    this.renderMissions();
+                });
+                document.getElementById('btn-levels').addEventListener('click', () => {
+                    ui.openModal('modal-levels');
+                    this.renderLevelsSelector();
+                    audio.playPop();
+                });
+                document.getElementById('btn-moregames').addEventListener('click', () => {
+                    ui.openModal('modal-moregames');
+                    audio.playPop();
+                });
+
+                // Pointer Aim Position Tracker
+                const updatePointerPos = (clientX, clientY) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.pointerX = clientX - rect.left;
+                    this.pointerY = clientY - rect.top;
+                };
+
+                this.canvas.addEventListener('mousemove', (e) => {
+                    updatePointerPos(e.clientX, e.clientY);
+                });
+
+                this.canvas.addEventListener('touchmove', (e) => {
+                    if (e.touches.length > 0) {
+                        updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
+                    }
+                });
+
+                // Aim & Shoot Triggering Actions
+                const triggerShoot = (clientX, clientY) => {
+                    if (this.gameState !== 'playing') return;
+                    audio.init();
+
+                    const rect = this.canvas.getBoundingClientRect();
+                    const px = clientX - rect.left;
+                    const py = clientY - rect.top;
+
+                    // Spawn Arrow from bottom center pot launcher
+                    const startX = this.canvas.width / 2;
+                    const startY = this.canvas.height - 45;
+                    this.arrows.push(new Arrow(startX, startY, px, py));
+                    
+                    audio.playShoot();
+                };
+
+                this.canvas.addEventListener('mousedown', (e) => {
+                    triggerShoot(e.clientX, e.clientY);
+                });
+
+                this.canvas.addEventListener('touchstart', (e) => {
+                    if (e.touches.length > 0) {
+                        triggerShoot(e.touches[0].clientX, e.touches[0].clientY);
+                    }
+                    e.preventDefault();
+                }, { passive: false });
+            }
+
+            showScreen(id) {
+                const screens = document.querySelectorAll('.screen');
+                screens.forEach(s => s.classList.add('hidden'));
+                
+                const hud = document.getElementById('hud');
+                if (id) {
+                    document.getElementById(id).classList.remove('hidden');
+                    hud.classList.remove('visible');
+                } else {
+                    hud.classList.add('visible');
+                }
+            }
+
+            renderScoreboard() {
+                const render = (bodyId, list) => {
+                    const body = document.getElementById(bodyId);
+                    body.innerHTML = '';
+                    for (let i = 0; i < 5; i++) {
+                        const score = list[i] !== undefined ? list[i] : '---';
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="score-rank">#${i + 1}</td>
+                            <td class="score-value">${score}</td>
+                        `;
+                        body.appendChild(tr);
+                    }
+                };
+                render('scores-classic-body', this.highScores.classic);
+                render('scores-time-body', this.highScores.time);
+            }
+
+            renderLevelsSelector() {
+                const container = document.getElementById('levels-grid-container');
+                container.innerHTML = '';
+                
+                for (let l = 1; l <= 60; l++) {
+                    const btn = document.createElement('button');
+                    
+                    if (l <= this.highestUnlockedLevel) {
+                        btn.className = 'level-btn';
+                        btn.innerHTML = `${l}`;
+                        btn.onclick = () => {
+                            ui.closeModal('modal-levels');
+                            this.startGame('level', l);
+                        };
+                        if (l === this.currentLevel) {
+                            btn.classList.add('active-lvl');
+                        }
+                    } else {
+                        btn.className = 'level-btn locked-lvl';
+                        btn.innerHTML = `🔒`;
+                    }
+                    container.appendChild(btn);
+                }
+            }
+
+            startGame(mode, selectedLvl) {
+                audio.init();
+                audio.resume();
+                if (audio.musicEnabled) {
+                    audio.startMusic();
+                }
+
+                this.gameMode = mode;
+                this.score = 0;
+                this.combo = 0;
+                this.maxCombo = 0;
+                this.lives = 3;
+                this.timeRemaining = 60;
+
+                this.balloons = [];
+                this.particles = [];
+                this.popups = [];
+                this.arrows = [];
+
+                this.pointerX = this.canvas.width / 2;
+                this.pointerY = 0;
+                this.shakeAmount = 0;
+
+                const now = performance.now();
+                this.lastSpawnTime = now;
+                this.lastSecondTime = now;
+                this.lastDifficultyIncrease = now;
+
+                document.getElementById('score-val').textContent = "0";
+                
+                const livesUI = document.getElementById('lives-container');
+                const timerUI = document.getElementById('timer-ui');
+                const comboUI = document.getElementById('combo-ui');
+                const levelHudBox = document.getElementById('level-hud-box');
+
+                comboUI.style.display = 'none';
+
+                // Restore green button text standard look
+                const retryBtn = document.getElementById('btn-retry');
+                retryBtn.textContent = "Play Again";
+
+                if (mode === 'level') {
+                    // Level Mode configurations
+                    this.currentLevel = selectedLvl || 1;
+                    this.levelPops = 0;
+                    this.levelTargetPops = 15 + this.currentLevel * 5;
+
+                    this.speedMultiplier = 1.0 + this.currentLevel * 0.045;
+                    this.spawnRate = Math.max(250, 1300 - this.currentLevel * 16);
+
+                    livesUI.style.display = 'flex';
+                    timerUI.style.display = 'none';
+                    levelHudBox.style.display = 'block';
+
+                    document.getElementById('hud-lvl-val').textContent = this.currentLevel;
+                    document.getElementById('hud-progress-val').textContent = `0/${this.levelTargetPops}`;
+                    this.updateLivesDisplay();
+                } else {
+                    // Classic / Time mode configurations
+                    levelHudBox.style.display = 'none';
+                    this.currentLevel = 1; // resets variables
+
+                    if (mode === 'classic') {
+                        this.speedMultiplier = 1.0 + (this.selectedLevel - 1) * 0.4;
+                        this.spawnRate = Math.max(500, 1200 - (this.selectedLevel - 1) * 200);
+
+                        livesUI.style.display = 'flex';
+                        timerUI.style.display = 'none';
+                        this.updateLivesDisplay();
+                    } else {
+                        // Time attack
+                        this.speedMultiplier = 1.2;
+                        this.spawnRate = 800;
+
+                        livesUI.style.display = 'none';
+                        timerUI.style.display = 'block';
+                        document.getElementById('time-val').textContent = this.timeRemaining;
+                    }
+                }
+
+                this.showScreen(null);
+                this.gameState = 'playing';
+            }
+
+            pauseGame() {
+                if (this.gameState === 'playing') {
+                    this.gameState = 'paused';
+                    this.showScreen('screen-pause');
+                }
+            }
+
+            resumeGame() {
+                if (this.gameState === 'paused') {
+                    this.showScreen(null);
+                    this.gameState = 'playing';
+                    const now = performance.now();
+                    this.lastSpawnTime = now;
+                    this.lastSecondTime = now;
+                    this.lastDifficultyIncrease = now;
+                }
+            }
+
+            quitToMenu() {
+                audio.stopMusic();
+                this.gameState = 'start';
+                this.showScreen('screen-start');
+            }
+
+            updateLivesDisplay() {
+                const hearts = document.querySelectorAll('#lives-container .heart-icon');
+                hearts.forEach((heart, i) => {
+                    if (i < this.lives) {
+                        heart.classList.remove('lost');
+                    } else {
+                        heart.classList.add('lost');
+                    }
+                });
+            }
+
+            triggerGameOver() {
+                audio.stopMusic();
+                this.gameState = 'gameover';
+                this.updateHighScores(this.gameMode, this.score);
+                
+                document.getElementById('final-score').textContent = this.score;
+                const title = document.getElementById('gameover-title');
+                const msg = document.getElementById('gameover-msg');
+
+                // Standardize title background styling
+                title.style.background = "linear-gradient(135deg, #ff4757, #ff7f50, #eccc68)";
+                title.style.webkitBackgroundClip = "text";
+
+                if (this.gameMode === 'level') {
+                    title.textContent = `Level ${this.currentLevel} Failed`;
+                    msg.innerHTML = `You ran out of lives. Keep practicing! Pops: <span style="color:#ffa502;">${this.levelPops}/${this.levelTargetPops}</span>`;
+                    document.getElementById('btn-retry').textContent = "Retry Level";
+                } else if (this.gameMode === 'time') {
+                    title.textContent = "Time's Up!";
+                    msg.textContent = `Completed 60s Time Attack! Max Combo reached: x${this.maxCombo}`;
+                } else {
+                    title.textContent = "Game Over";
+                    msg.textContent = `You ran out of lives. Max Combo reached: x${this.maxCombo}`;
+                }
+
+                this.showScreen('screen-gameover');
+            }
+
+            triggerLevelClear() {
+                audio.stopMusic();
+                this.gameState = 'level_clear';
+
+                // Unlock next level up to 60
+                const nextLvl = this.currentLevel + 1;
+                if (nextLvl <= 60 && nextLvl > this.highestUnlockedLevel) {
+                    this.highestUnlockedLevel = nextLvl;
+                    localStorage.setItem('highest_unlocked_level', nextLvl);
+                }
+
+                // Award coin bonus
+                const bonusCoins = this.currentLevel * 10;
+                this.coins += bonusCoins;
+                localStorage.setItem('balloon_coins', this.coins);
+                this.updateMenuCoinBadge();
+
+                document.getElementById('final-score').textContent = this.score;
+                const title = document.getElementById('gameover-title');
+                const msg = document.getElementById('gameover-msg');
+
+                title.textContent = `🌟 Level ${this.currentLevel} Clear! 🌟`;
+                title.style.background = "linear-gradient(135deg, #2ed573, #7bed9f)";
+                title.style.webkitBackgroundClip = "text";
+
+                msg.innerHTML = `Superb aiming skills! You received a Level bonus reward of <span style="color:#ffd32c;font-weight:bold;">🪙 ${bonusCoins} Coins</span>!`;
+
+                const retryBtn = document.getElementById('btn-retry');
+                if (nextLvl <= 60) {
+                    retryBtn.textContent = "Next Level";
+                } else {
+                    retryBtn.textContent = "Main Menu";
+                }
+
+                this.showScreen('screen-gameover');
+            }
+
+            popBalloon(balloon, index) {
+                let pts = 0;
+                let multiplier = 1;
+
+                if (balloon.type === 'normal') {
+                    pts = 10;
+                    this.combo++;
+                    this.missionProgress.pops++;
+                    audio.playPop();
+                } else if (balloon.type === 'golden') {
+                    pts = 50;
+                    this.combo++;
+                    this.missionProgress.goldPops++;
+                    audio.playGoldPop();
+                } else if (balloon.type === 'bomb') {
+                    pts = -20;
+                    this.combo = 0;
+                    this.shakeAmount = 14;
+                    audio.playExplosion();
+                }
+
+                localStorage.setItem('mission_progress', JSON.stringify(this.missionProgress));
+
+                if (pts > 0) {
+                    if (this.combo >= 5) {
+                        multiplier = 3;
+                    } else if (this.combo >= 3) {
+                        multiplier = 2;
+                    }
+                }
+
+                const totalPoints = pts * multiplier;
+                this.score = Math.max(0, this.score + totalPoints);
+                document.getElementById('score-val').textContent = this.score;
+
+                if (pts > 0) {
+                    const coinsEarned = balloon.type === 'golden' ? 5 : 1;
+                    this.coins += coinsEarned;
+                    localStorage.setItem('balloon_coins', this.coins);
+                    this.updateMenuCoinBadge();
+
+                    // If level mode, track progress targets
+                    if (this.gameMode === 'level') {
+                        this.levelPops++;
+                        document.getElementById('hud-progress-val').textContent = `${this.levelPops}/${this.levelTargetPops}`;
+                        
+                        // Increase speed dynamically with every pop within the level
+                        this.speedMultiplier += 0.015;
+
+                        if (this.levelPops >= this.levelTargetPops) {
+                            this.triggerLevelClear();
+                        }
+                    }
+                }
+
+                if (this.combo > this.maxCombo) {
+                    this.maxCombo = this.combo;
+                }
+
+                let label = totalPoints >= 0 ? `+${totalPoints}` : `${totalPoints}`;
+                if (multiplier > 1 && pts > 0) {
+                    label += ` Combo x${multiplier}!`;
+                }
+
+                const color = pts < 0 ? '#ff4757' : (balloon.type === 'golden' ? '#ffa502' : '#2ed573');
+                this.popups.push(new ScorePopup(balloon.currentX, balloon.y, label, color));
+
+                const particleColor = balloon.type === 'golden' ? '#ffd700' : (balloon.type === 'bomb' ? '#ff4757' : balloon.color);
+                for (let k = 0; k < 12; k++) {
+                    this.particles.push(new Particle(balloon.currentX, balloon.y, particleColor));
+                }
+
+                this.balloons.splice(index, 1);
+                this.updateComboUI();
+            }
+
+            updateComboUI() {
+                const comboUI = document.getElementById('combo-ui');
+                if (this.combo >= 3) {
+                    comboUI.style.display = 'block';
+                    const activeMult = this.combo >= 5 ? 3 : 2;
+                    comboUI.textContent = `Combo x${activeMult}`;
+                } else {
+                    comboUI.style.display = 'none';
+                }
+            }
+
+            handleDifficultyScaling(now) {
+                // Classic difficulty scaling (level mode has preset progressive speeds)
+                if (this.gameMode !== 'level' && now - this.lastDifficultyIncrease > 30000) {
+                    this.speedMultiplier += 0.25;
+                    this.spawnRate = Math.max(450, this.spawnRate - 150);
+                    this.lastDifficultyIncrease = now;
+                    audio.playLevelUp();
+                    
+                    this.popups.push(new ScorePopup(
+                        this.canvas.width / 2, 
+                        this.canvas.height / 2, 
+                        "SPEED INCREASED!", 
+                        "#eccc68"
+                    ));
+                }
+            }
+
+            // Draw a shiny star representation (for Star skin balloons)
+            drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, fillStyle) {
+                let rot = Math.PI / 2 * 3;
+                let x = cx;
+                let y = cy;
+                let step = Math.PI / spikes;
+
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - outerRadius);
+                for (let i = 0; i < spikes; i++) {
+                    x = cx + Math.cos(rot) * outerRadius;
+                    y = cy + Math.sin(rot) * outerRadius;
+                    ctx.lineTo(x, y);
+                    rot += step;
+
+                    x = cx + Math.cos(rot) * innerRadius;
+                    y = cy + Math.sin(rot) * innerRadius;
+                    ctx.lineTo(x, y);
+                    rot += step;
+                }
+                ctx.lineTo(cx, cy - outerRadius);
+                ctx.closePath();
+                ctx.fillStyle = fillStyle;
+                ctx.fill();
+            }
+
+            // Draw Cannon Launcher (Matching red marked elements of input_file_1)
+            drawLauncher() {
+                const cx = this.canvas.width / 2;
+                const cy = this.canvas.height - 35;
+
+                this.ctx.save();
+                
+                // Rotation angle computation towards pointer position
+                let targetAngle = Math.atan2(this.pointerY - cy, this.pointerX - cx) + Math.PI / 2;
+                
+                // Constrain rotation to up-facing semicircle only
+                if (targetAngle < -Math.PI / 2.8) targetAngle = -Math.PI / 2.8;
+                if (targetAngle > Math.PI / 2.8) targetAngle = Math.PI / 2.8;
+
+                this.ctx.translate(cx, cy);
+                this.ctx.rotate(targetAngle);
+
+                // 1. Purple Launcher Base Cup
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, 34, Math.PI, 0);
+                this.ctx.fillStyle = '#6c5ce7';
+                this.ctx.strokeStyle = '#20134a';
+                this.ctx.lineWidth = 3.5;
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // 2. Shiny Gold Circular Rim Frame
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, 34, 0, Math.PI * 2);
+                this.ctx.strokeStyle = '#ffa502';
+                this.ctx.lineWidth = 4.5;
+                this.ctx.stroke();
+
+                // 3. Loaded Blue Glossy Marble
+                const grad = this.ctx.createRadialGradient(-6, -6, 2, 0, 0, 22);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, '#0984e3');
+                grad.addColorStop(1, '#00134a');
+
+                this.ctx.beginPath();
+                this.ctx.arc(0, -5, 20, 0, Math.PI * 2);
+                this.ctx.fillStyle = grad;
+                this.ctx.shadowColor = '#00f2fe';
+                this.ctx.shadowBlur = 8;
+                this.ctx.fill();
+                this.ctx.shadowBlur = 0;
+
+                // 4. Gold circle decoration at the bottom base center
+                this.ctx.beginPath();
+                this.ctx.arc(0, 24, 7, 0, Math.PI * 2);
+                this.ctx.fillStyle = '#ffa502';
+                this.ctx.strokeStyle = '#20134a';
+                this.ctx.lineWidth = 2.5;
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                this.ctx.restore();
+            }
+
+            updateMenuCoinBadge() {
+                document.getElementById('menu-coins').textContent = this.coins;
+            }
+
+            selectLevel(lvl, elem) {
+                this.selectedLevel = lvl;
+                localStorage.setItem('selected_level', lvl);
+                
+                const btns = document.querySelectorAll('.level-btn');
+                btns.forEach(b => b.classList.remove('active-lvl'));
+                elem.classList.add('active-lvl');
+                audio.playPop();
+            }
+
+            claimDailyGift() {
+                const now = Date.now();
+                const lastClaim = parseInt(localStorage.getItem('last_daily_claim') || '0');
+                
+                if (now - lastClaim < 10000) {
+                    alert("Come back soon for the next mystery gift chest!");
+                    return;
+                }
+
+                const bonus = Math.floor(Math.random() * 401) + 100;
+                this.coins += bonus;
+                localStorage.setItem('balloon_coins', this.coins);
+                localStorage.setItem('last_daily_claim', now.toString());
+                
+                this.updateMenuCoinBadge();
+                audio.playLevelUp();
+                alert(`Outstanding! You discovered +${bonus} Gold Coins inside the gift chest!`);
+                ui.closeModal('modal-daily');
+            }
+
+            renderDailyButtonState() {
+                const now = Date.now();
+                const lastClaim = parseInt(localStorage.getItem('last_daily_claim') || '0');
+                const btn = document.getElementById('btn-claim-daily');
+                if (now - lastClaim < 10000) {
+                    btn.textContent = "Cooldown Active";
+                    btn.style.background = "#bdc3c7";
+                } else {
+                    btn.textContent = "Claim Coins";
+                    btn.style.background = "linear-gradient(to bottom, #2ed573, #26af56)";
+                }
+            }
+
+            renderShop() {
+                const container = document.getElementById('shop-grid-container');
+                container.innerHTML = '';
+
+                const skins = [
+                    { id: 'classic', name: 'Classic Red', cost: 0, color: '#ff4757' },
+                    { id: 'neon', name: 'Neon Glow', cost: 150, color: '#39ff14' },
+                    { id: 'gold', name: 'Gold Luxury', cost: 400, color: '#ffd200' },
+                    { id: 'star', name: 'Royal Star', cost: 750, color: '#f15bb5' }
+                ];
+
+                skins.forEach(skin => {
+                    const item = document.createElement('div');
+                    item.className = 'shop-item';
+                    
+                    let buttonHTML = '';
+                    if (this.unlockedSkins.includes(skin.id)) {
+                        if (this.activeSkin === skin.id) {
+                            buttonHTML = `<button class="shop-btn active-skin">ACTIVE</button>`;
+                        } else {
+                            buttonHTML = `<button class="shop-btn" onclick="game.equipSkin('${skin.id}')">EQUIP</button>`;
+                        }
+                    } else {
+                        buttonHTML = `<button class="shop-btn" onclick="game.buySkin('${skin.id}', ${skin.cost})">🪙 ${skin.cost}</button>`;
+                    }
+
+                    item.innerHTML = `
+                        <div class="shop-preview" style="background: radial-gradient(circle at 30% 30%, #fff 0%, ${skin.color} 70%, #000 100%);"></div>
+                        <div class="shop-name">${skin.name}</div>
+                        ${buttonHTML}
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            equipSkin(id) {
+                this.activeSkin = id;
+                localStorage.setItem('active_balloon_skin', id);
+                audio.playPop();
+                this.renderShop();
+            }
+
+            buySkin(id, cost) {
+                if (this.coins >= cost) {
+                    this.coins -= cost;
+                    this.unlockedSkins.push(id);
+                    localStorage.setItem('balloon_coins', this.coins);
+                    localStorage.setItem('unlocked_skins', JSON.stringify(this.unlockedSkins));
+                    
+                    this.updateMenuCoinBadge();
+                    audio.playGoldPop();
+                    this.equipSkin(id);
+                } else {
+                    alert("Not enough coins! Pop more balloons to acquire virtual funds.");
+                }
+            }
+
+            renderMissions() {
+                const container = document.getElementById('missions-list-container');
+                container.innerHTML = '';
+
+                const missionsList = [
+                    { id: 'm1', desc: 'Pop 50 Balloons', target: 50, reward: 100, current: this.missionProgress.pops },
+                    { id: 'm2', desc: 'Pop 8 Gold Balloons', target: 8, reward: 200, current: this.missionProgress.goldPops },
+                    { id: 'm3', desc: 'Reach 1000 Classic High Score', target: 1000, reward: 300, current: this.missionProgress.highScoreClassic }
+                ];
+
+                missionsList.forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'mission-item';
+
+                    const isCompleted = m.current >= m.target;
+                    const isClaimed = this.claimedMissions.includes(m.id);
+
+                    let btnHTML = '';
+                    if (isClaimed) {
+                        btnHTML = `<button class="mission-claim-btn" disabled>Claimed</button>`;
+                    } else if (isCompleted) {
+                        btnHTML = `<button class="mission-claim-btn" onclick="game.claimMission('${m.id}', ${m.reward})">CLAIM</button>`;
+                    } else {
+                        btnHTML = `<button class="mission-claim-btn" disabled>Incomplete</button>`;
+                    }
+
+                    item.innerHTML = `
+                        <div class="mission-details">
+                            <span class="mission-desc">${m.desc}</span>
+                            <span class="mission-progress">Progress: ${Math.min(m.current, m.target)} / ${m.target}</span>
+                        </div>
+                        ${btnHTML}
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            claimMission(id, reward) {
+                if (!this.claimedMissions.includes(id)) {
+                    this.claimedMissions.push(id);
+                    this.coins += reward;
+                    localStorage.setItem('balloon_coins', this.coins);
+                    localStorage.setItem('claimed_missions', JSON.stringify(this.claimedMissions));
+                    
+                    this.updateMenuCoinBadge();
+                    audio.playLevelUp();
+                    this.renderMissions();
+                }
+            }
+
+            resetAllProgress() {
+                if (confirm("Are you sure you want to completely erase all local scores, coin progress, and skins?")) {
+                    localStorage.clear();
+                    location.reload();
+                }
+            }
+
+            run() {
+                const updateAndDraw = (timestamp) => {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                    if (this.gameState === 'playing') {
+                        this.handleDifficultyScaling(timestamp);
+
+                        // Spawn check
+                        if (timestamp - this.lastSpawnTime > this.spawnRate) {
+                            this.balloons.push(new Balloon(this.canvas.width, this.canvas.height, this.speedMultiplier));
+                            this.lastSpawnTime = timestamp;
+                        }
+
+                        // Game countdown logic for Time Attack Mode
+                        if (this.gameMode === 'time') {
+                            if (timestamp - this.lastSecondTime >= 1000) {
+                                this.timeRemaining--;
+                                document.getElementById('time-val').textContent = this.timeRemaining;
+                                this.lastSecondTime = timestamp;
+                                if (this.timeRemaining <= 0) {
+                                    this.triggerGameOver();
+                                }
+                            }
+                        }
+
+                        // Canvas Screen Vibration setup
+                        if (this.shakeAmount > 0) {
+                            this.ctx.save();
+                            const dx = (Math.random() - 0.5) * this.shakeAmount;
+                            const dy = (Math.random() - 0.5) * this.shakeAmount;
+                            this.ctx.translate(dx, dy);
+                            this.shakeAmount -= 0.6;
+                        }
+
+                        // 1. Update & Draw Arrows Projectiles
+                        for (let i = this.arrows.length - 1; i >= 0; i--) {
+                            const arr = this.arrows[i];
+                            arr.update();
+                            arr.draw(this.ctx);
+
+                            // Check collision of this arrow against all active balloons
+                            for (let j = this.balloons.length - 1; j >= 0; j--) {
+                                const b = this.balloons[j];
+                                // Compute exact distance between arrow center and balloon center
+                                const bX = b.currentX || b.x;
+                                const dist = Math.hypot(arr.x - bX, arr.y - b.y);
+                                if (dist < b.radius + arr.radius) {
+                                    this.popBalloon(b, j);
+                                    arr.active = false; // Destroy arrow
+                                    break;
+                                }
+                            }
+
+                            if (arr.isOutOfBounds(this.canvas.width, this.canvas.height)) {
+                                arr.active = false;
+                            }
+                        }
+                        this.arrows = this.arrows.filter(a => a.active);
+
+                        // 2. Update & Draw Balloons
+                        for (let i = this.balloons.length - 1; i >= 0; i--) {
+                            const b = this.balloons[i];
+                            b.update();
+                            b.draw(this.ctx);
+
+                            if (b.y < -b.radius * 2) {
+                                if (b.type !== 'bomb') {
+                                    this.combo = 0;
+                                    this.updateComboUI();
+
+                                    if (this.gameMode === 'classic' || this.gameMode === 'level') {
+                                        this.lives--;
+                                        this.updateLivesDisplay();
+                                        if (this.lives <= 0) {
+                                            this.triggerGameOver();
+                                        }
+                                    }
+                                }
+                                this.balloons.splice(i, 1);
+                            }
+                        }
+
+                        // 3. Render active Cannon Launcher at the bottom center
+                        this.drawLauncher();
+
+                        if (this.shakeAmount > 0) {
+                            this.ctx.restore();
+                        }
+
+                        // Update & Render Burst particles
+                        for (let i = this.particles.length - 1; i >= 0; i--) {
+                            const p = this.particles[i];
+                            p.update();
+                            if (p.alpha <= 0) {
+                                this.particles.splice(i, 1);
+                            } else {
+                                p.draw(this.ctx);
+                            }
+                        }
+
+                        // Update & Render Point popups
+                        for (let i = this.popups.length - 1; i >= 0; i--) {
+                            const sp = this.popups[i];
+                            sp.update();
+                            if (sp.alpha <= 0) {
+                                this.popups.splice(i, 1);
+                            } else {
+                                sp.draw(this.ctx);
+                            }
+                        }
+
+                    } else {
+                        // Draw background elements on Paused/Home screens
+                        this.balloons.forEach(b => b.draw(this.ctx));
+                        this.particles.forEach(p => p.draw(this.ctx));
+                        this.popups.forEach(sp => sp.draw(this.ctx));
+                    }
+
+                    requestAnimationFrame(updateAndDraw);
+                };
+
+                requestAnimationFrame(updateAndDraw);
+            }
+        }
+
+        // --- Layout/Modal UI Controller ---
+        class MenuUI {
+            openModal(id) {
+                document.getElementById(id).classList.add('active');
+            }
+
+            closeModal(id) {
+                document.getElementById(id).classList.remove('active');
+                audio.playPop();
+            }
+        }
+
+        const ui = new MenuUI();
+        const game = new GameManager();
+        game.run();
+    </script>
+</body>
+</html>
